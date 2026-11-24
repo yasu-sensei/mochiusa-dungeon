@@ -217,11 +217,11 @@ async function excavationPop(i,emoji){
 }
 async function discover(i){const type=state.types[i];if(state.found.includes(i)||type==='empty')return false;
 // 一度だけ処理する。イベント中の二重操作を防ぐ。
-state.found.push(i);if(type==='special')window.dispatchEvent(new Event('chitei-special-found'));let label='',tap=false;
+if(type==='special'&&typeof window.chiteiAwardTreasure==='function')await window.chiteiAwardTreasure(currentFloor);state.found.push(i);if(type==='special')window.dispatchEvent(new Event('chitei-special-found'));let label='',tap=false;
 if(type==='item'){const name=itemName(i);await excavationPop(i,POP_ICONS[name]||'❔');if(name==='つるはし')label=reward('pick');else{const labels={'かいふくやく':'🧪 かいふくやくを ゲット！','456ダイス':'🎲 456ダイスを ゲット！','ぼろぼろの たて':'🛡️ ぼろぼろの たてを ゲット！'};label=labels[name]||'✨ アイテムを ゲット！';addHistory(label)}await showEvent(label,false)}
 else if(['wood','emptywood','mimic','silver','gold'].includes(type)){label='📦 たからばこを はっけん！';addHistory(label);await openChest(type,i)}
 else if(type==='monster'){chiteiEncounterMonster=chiteiMonsterForCell(i);label='👾 '+CHITEI_MONSTER_NAMES[chiteiEncounterMonster]+'が あらわれた！';addHistory(label);await monsterEncounter(i);await battle(false)}
-else{const messages={stairs:'🌀 ワープゲートを はっけん！',special:'💎 おたからを はっけん！'};label=messages[type]||'✨ なにかを はっけん！';addHistory(label);await showEvent(label,true)}
+else if(type==='special'&&typeof window.chiteiAwardTreasure==='function'){addHistory('💎 おたからを はっけん！')}else{const messages={stairs:'🌀 ワープゲートを はっけん！',special:'💎 おたからを はっけん！'};label=messages[type]||'✨ なにかを はっけん！';addHistory(label);await showEvent(label,true)}
 render();return true}
 async function select(i){if(moving)return;const nx=i%N,ny=Math.floor(i/N),open=state.open.includes(i);if(nx===x&&ny===y)return;
 if(!open&&!isNear(nx,ny)){msg.textContent='まだ ほっていないマスは、となりだけ ほれるよ';return}
