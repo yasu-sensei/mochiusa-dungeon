@@ -1,0 +1,271 @@
+
+const sprites={"0_0": "images/d53232930153cc8f.webp", "1_0": "images/f5dcbe15f535a4df.webp", "2_0": "images/bb3db842589154ec.webp", "3_0": "images/b55a6d9923b5e164.webp", "0_1": "images/730627ffc9482751.webp", "1_1": "images/09cf6c5b24dd376d.webp", "2_1": "images/3b0c448009ba91e7.webp", "3_1": "images/897f4e9810605dfa.webp", "0_2": "images/debc4eea12212ab4.webp", "1_2": "images/c0034a1b1a4ef1c9.webp", "2_2": "images/434981431e8e88d7.webp", "3_2": "images/55db315f32922f5a.webp"};
+const N=10, TOTAL=100, KEY='mochiusa_underground_B1_prototype_10x10_v1';
+const FLOOR_KEY_2='mochiusa_underground_B2_prototype_10x10_v1';
+const FLOOR_ACTIVE_KEY='mochiusa_underground_active_floor_v16';
+let currentFloor=Math.max(1,Math.min(8,Number(localStorage.getItem(FLOOR_ACTIVE_KEY))||1));
+function floorKey(f){return f===1?KEY:f===2?FLOOR_KEY_2:'mochiusa_underground_B'+f+'_prototype_10x10_v1';}
+function readFloor(f){try{return JSON.parse(localStorage.getItem(floorKey(f)))}catch(e){return null}}
+function validFloor(s){return s&&Array.isArray(s.open)&&Array.isArray(s.found)&&Array.isArray(s.types)&&s.types.length===TOTAL}
+
+const viewport=document.getElementById('viewport');const board=document.getElementById('board'),actor=document.getElementById('actor'),sprite=document.getElementById('sprite'),shadow=document.getElementById('shadow');
+const msg=document.getElementById('msg');const eventOverlay=document.getElementById('eventOverlay'),eventText=document.getElementById('eventText'),eventHint=document.getElementById('eventHint');let eventDone=null;const ITEM_NAMES=['つるはし','つるはし','つるはし','つるはし','つるはし','つるはし','つるはし','かいふくやく','かいふくやく','かいふくやく','456ダイス','456ダイス','ぼろぼろの たて'];function itemName(i){const all=state.types.map((t,j)=>t==='item'?j:-1).filter(j=>j>=0).sort((a,b)=>a-b);return ITEM_NAMES[all.indexOf(i)]||'アイテム'}function showEvent(label,needsTap){eventText.textContent=label;eventHint.textContent=needsTap?'タップして すすむ':'';eventOverlay.hidden=false;return new Promise(resolve=>{let done=false;let timer=null;const finish=()=>{if(done)return;done=true;clearTimeout(timer);eventOverlay.hidden=true;eventOverlay.onclick=null;resolve()};eventOverlay.onclick=finish;if(!needsTap)timer=setTimeout(finish,1900)})}function updateInfo(){const foundItems=state.found.filter(i=>state.types[i]==='item').map(itemName);const counts={};for(const name of foundItems)counts[name]=(counts[name]||0)+1;const extra=state.wallet?.items||{};const lines=[['⛏️ つるはし',Math.max(0,state.pick||0)],['🧪 かいふくやく',Math.max(0,(counts['かいふくやく']||0)+(extra.heal||0)-(state.wallet?.itemsSpent?.heal||0))],['🎲 456ダイス',Math.max(0,(counts['456ダイス']||0)+(extra.dice||0)-(state.wallet?.itemsSpent?.dice||0))],['🛡️ ぼろぼろの たて',Math.max(0,(counts['ぼろぼろの たて']||0)+(extra.shield||0)-(state.wallet?.itemsSpent?.shield||0))]];document.getElementById('inventory').innerHTML=lines.map(([name,n])=>'<div class="inventoryLine"><span>'+name+'</span><strong>'+n+'</strong></div>').join('');const h=state.history||[];document.getElementById('history').innerHTML=h.length?h.slice(-5).reverse().map(t=>'<div class="historyLine">'+t+'</div>').join(''):'まだ はっけんは ないよ'}let x=5,y=5,dir=0,moving=false,activeTarget=-1;
+function create(floor=currentFloor){
+  const types=Array(TOTAL).fill('empty'),start=55;
+  const pool=[];for(let i=0;i<TOTAL;i++)if(i!==start)pool.push(i);
+  let seed=20261117+floor*7919;function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+  let at=0;
+  for(const [type,count] of [['item',13],['monster',10],['wood',3],['emptywood',1],['mimic',1],['silver',2],['gold',1],['stairs',1],['special',1]])
+    for(let j=0;j<count;j++)types[pool[at++]]=type;
+  return {x:5,y:5,pick:15,open:[start],types,found:[],steps:0,wallet:{ticket:0,items:{heal:0,dice:0,shield:0}}};
+}
+let state=readFloor(currentFloor);if(!validFloor(state))state=create(currentFloor);
+// つるはしとアイテムは階をまたいで引き継ぐ。
+const priorFloor=[1,2,3,4,5,6,7,8].filter(f=>f!==currentFloor).map(readFloor).filter(validFloor).sort((a,b)=>(b._sharedAt||0)-(a._sharedAt||0))[0];
+if(validFloor(priorFloor)&&priorFloor._sharedAt>(state._sharedAt||0)){state.pick=priorFloor.pick;state.wallet=priorFloor.wallet;}
+x=state.x;y=state.y;
+const icons={item:'',monster:'👾',wood:'‼️',emptywood:'‼️',mimic:'‼️',silver:'‼️',gold:'‼️',stairs:'🌀',special:'💎',empty:''};const cells=[];
+function save(){state._sharedAt=Date.now();localStorage.setItem(floorKey(currentFloor),JSON.stringify(state));localStorage.setItem(FLOOR_ACTIVE_KEY,String(currentFloor));updateFloorLabel();}function updateFloorLabel(){const label=document.getElementById('floorLabel');if(label)label.textContent='地下'+currentFloor+'階';const back=document.getElementById('backFloor1');if(back)back.style.display=currentFloor>1?'block':'none';}
+function moveFloor(next){
+ if(next<1||next>8)return;
+ save();const sharedPick=state.pick,sharedWallet=state.wallet;
+ currentFloor=next;
+ let nextState=readFloor(next);
+ if(!validFloor(nextState))nextState=create(next);
+ state=nextState;state.pick=sharedPick;state.wallet=sharedWallet;
+ x=state.x;y=state.y;dir=0;activeTarget=-1;
+ position(x,y);frame(0);render();window.dispatchEvent(new Event('chitei-special-found'));
+ msg.textContent='🐰 ちか'+next+'かいに とうちゃく！ とくべつな おたからを さがそう！';
+}
+function idx(a,b){return b*N+a}function isNear(a,b){return Math.abs(a-x)+Math.abs(b-y)===1}function fitBoard(){const size=Math.min(viewport.clientWidth,viewport.clientHeight);board.style.width=size+'px';board.style.height=size+'px'}function camera(px,py){viewport.scrollLeft=0;viewport.scrollTop=0;drawMinimap()}function position(px,py,lift=0){actor.style.transform=`translate(${px*100}%,${py*100}%) translateY(${-lift}%)`;camera(px,py)}function frame(row){sprite.src=sprites[dir+'_'+row]}
+const DUNGEON_TILE_THEMES={1:{2:'images/8668b57230f187c4.webp'},2:{0:'images/13d2f986df447f08.webp',1:'images/e10bd36c6faae98e.webp',2:'images/541c2e000b191b89.webp'},3:{0:'images/ea0f14b9dd0b8083.webp',1:'images/f23915ac1d006c79.webp',2:'images/b9e25da872c8bfcc.webp'},4:{0:'images/529ec98360a49069.webp',1:'images/8b19785143549fe0.webp',2:'images/6218f21965241e45.webp'},5:{0:'images/bae5d43bfcbdd4f9.webp',1:'images/685be9a2b4fc43ec.webp',2:'images/c5e8e4458661ca7c.webp'},6:{0:'images/c28ba2ec4eddc85c.webp',1:'images/21f2d158b392e456.webp',2:'images/7a2d130b3a9ef214.webp'},7:{0:'images/e366138e2de8316a.webp',1:'images/ffcc5bb602b96d7e.webp',2:'images/a0b8f23a0a370d61.webp'},8:{0:'images/9ef1665de543185a.webp',1:'images/24f06273d99b0c19.webp',2:'images/2adb202bbd3d99a2.webp'}};
+const dungeonThemeStyle=document.createElement('style');dungeonThemeStyle.textContent=`
+#board.dungeon-themed .cell.hidden{background-image:var(--dungeon-hidden)!important;background-size:100% 100%!important;background-position:center!important}
+#board.dungeon-themed .cell.open{background-image:var(--dungeon-open)!important;background-size:100% 100%!important;background-position:center!important}
+#board .cell.open.warp{background-image:var(--dungeon-warp)!important;background-size:100% 100%!important;background-position:center!important}
+`;document.head.appendChild(dungeonThemeStyle);
+let activeThemeZone=0;
+function applyDungeonTheme(){
+ const zone=Math.min(8,Math.floor((currentFloor-1)/5)+1);
+ if(zone===activeThemeZone)return;
+ activeThemeZone=zone;
+ const tiles=DUNGEON_TILE_THEMES[zone];
+ // Preserve original first-area approved hidden/open textures exactly.
+ if(zone===1){board.classList.remove('dungeon-themed');board.style.removeProperty('--dungeon-hidden');board.style.removeProperty('--dungeon-open');}
+ else{board.classList.add('dungeon-themed');board.style.setProperty('--dungeon-hidden',`url("${tiles[0]}")`);board.style.setProperty('--dungeon-open',`url("${tiles[1]}")`);}
+ board.style.setProperty('--dungeon-warp',`url("${tiles[2]}")`);
+}
+function render(){applyDungeonTheme();for(let i=0;i<TOTAL;i++){const c=cells[i],open=state.open.includes(i),cx=i%N,cy=Math.floor(i/N);c.className='cell '+(open?'open':'hidden')+(open&&state.types[i]==='stairs'?' warp':'')+(open&&cx===x&&cy===y?' current':'')+(!open&&isNear(cx,cy)?' reachable':'')+(activeTarget===i?' target':'');c.textContent=open&&state.types[i]==='stairs'?'':open&&!state.found.includes(i)?(state.types[i]==='item'?(POP_ICONS[itemName(i)]||'❔'):icons[state.types[i]]):''}document.getElementById('pick').textContent='⛏️ つるはし：'+(parent.__teacherMode?'∞':Math.max(0,state.pick||0))+'ほん';document.getElementById('progress').textContent='発掘済み：'+state.open.length+'/100マス';document.getElementById('found').textContent='ジャンプ：'+state.steps+'回';updateInfo();save();drawMinimap()}
+for(let i=0;i<TOTAL;i++){const c=document.createElement('div');c.style.left=(i%N)*100/N+'%';c.style.top=Math.floor(i/N)*100/N+'%';c.addEventListener('click',()=>select(i));board.insertBefore(c,actor);cells.push(c)}
+async function hop(nx,ny){let sx=x,sy=y,ms=440,start=performance.now();await new Promise(resolve=>{function tick(t){let p=Math.min(1,(t-start)/ms),lift=Math.sin(Math.PI*p)*32;position(sx+(nx-sx)*p,sy+(ny-sy)*p,lift);frame(p<.22?0:p<.63?1:2);shadow.style.transform=`scale(${1-lift/95})`;shadow.style.opacity=String(1-lift/65);if(p<1)requestAnimationFrame(tick);else resolve()}requestAnimationFrame(tick)});x=nx;y=ny;state.x=x;state.y=y;state.steps++;position(x,y);frame(0);shadow.style.transform='';shadow.style.opacity='1'}
+function findPath(destination){const start=idx(x,y);if(destination===start)return [start];const queue=[start],parent=Array(TOTAL).fill(-1);parent[start]=start;for(let qi=0;qi<queue.length;qi++){const cur=queue[qi],cx=cur%N,cy=Math.floor(cur/N);for(const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0]]){const nx=cx+dx,ny=cy+dy;if(nx<0||ny<0||nx>=N||ny>=N)continue;const ni=idx(nx,ny);if(parent[ni]!==-1||!state.open.includes(ni))continue;parent[ni]=cur;if(ni===destination){const path=[ni];while(path[0]!==start)path.unshift(parent[path[0]]);return path}queue.push(ni)}}return null}
+function pause(ms){return new Promise(r=>setTimeout(r,ms))}
+async function dig(i){const c=cells[i];c.classList.add('digging');msg.textContent='⛏️ つるはしで いわを くだいているよ！';await pause(850);c.classList.remove('digging');if(!parent.__teacherMode)state.pick=Math.max(0,(state.pick||0)-1);state.open.push(i);render();msg.textContent='✨ いわが くだけた！'}
+// v0.7: 宝箱・じゃんけんの試作。モチウサの画像とジャンプ関数は変更しない。
+const interaction=document.getElementById('interaction'),interactionTitle=document.getElementById('interactionTitle'),interactionBody=document.getElementById('interactionBody'),interactionActions=document.getElementById('interactionActions');
+function dialog(title,body,choices){return new Promise(resolve=>{interactionTitle.textContent=title;interactionBody.textContent=body;interactionActions.replaceChildren();interaction.hidden=false;for(const [label,value] of choices){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{interaction.hidden=true;interactionActions.replaceChildren();resolve(value)};interactionActions.append(b)}})}
+function addHistory(t){state.history=state.history||[];state.history.push(t);state.history=state.history.slice(-12);msg.textContent=t;render()}
+function ensureWallet(){
+ state.wallet=state.wallet||{ticket:0,items:{}};
+ state.wallet.items=state.wallet.items||{};
+ return state.wallet;
+}
+// 報酬はショップ・コイン・旧コレクションを使わない。
+function reward(type,amount=1){
+ const w=ensureWallet();let text='';
+ if(type==='ticket'){return reward('pick',amount)}
+ else if(type==='pick'){state.pick+=amount;text='⛏️ つるはしを '+amount+'ほん ゲット！'}
+ else{
+  const defs={heal:['heal','🧪 かいふくやく'],dice:['dice','🎲 456ダイス'],shield:['shield','🛡️ ぼろぼろの たて']};
+  const def=defs[type];if(!def)return '';
+  w.items[def[0]]=(w.items[def[0]]||0)+amount;
+  text=def[1]+'を '+amount+'こ ゲット！';
+ }
+ addHistory(text);return text;
+}
+const REWARD_POOL=[['heal',25],['dice',25],['shield',25],['pick',25]];
+function chooseReward(pool=REWARD_POOL){const total=pool.reduce((n,r)=>n+r[1],0);let roll=Math.random()*total;for(const [name,weight] of pool){roll-=weight;if(roll<0)return name}return pool[pool.length-1][0]}
+function rewardPreview(type){return ({heal:'🧪 かいふくやく 1こ',dice:'🎲 456ダイス 1こ',shield:'🛡️ ぼろぼろの たて 1こ',pick:'⛏️ つるはし 1ほん'})[type]||''}
+function chanceReward(){// モンスター勝利時：50%でアイテムを1個ドロップ
+ if(Math.random()>=0.5)return '';
+ return reward(chooseReward([['pick',20],['heal',30],['dice',25],['shield',25]]));
+}
+// v1.7.2: 階が深くなるほど強敵が少しずつ増える。既存の10マス配置は維持。
+const CHITEI_MONSTER_NAMES=['アリへい','ガンリュウム','ガイコツ騎士','マガンメン'];
+// v1.7.3: 各階のモンスターマス10個を5/3/1/1に固定。既存のマス配置は変更しない。
+let chiteiEncounterMonster=0;
+function chiteiMonsterForCell(i){
+ const monsterCells=state.types.map((type,index)=>type==='monster'?index:-1).filter(index=>index>=0);
+ // マスごとに決定的な乱数を割り当て、保存・再開後も同じ敵になる。
+ function hash(index){
+  let n=((currentFloor*2654435761)^(index*2246822519)^0x8e6d32b1)>>>0;
+  n^=n>>>16;n=Math.imul(n,0x7feb352d);n^=n>>>15;n=Math.imul(n,0x846ca68b);n^=n>>>16;
+  return n>>>0;
+ }
+ monsterCells.sort((a,b)=>hash(a)-hash(b)||a-b);
+ const position=monsterCells.indexOf(i);
+ if(position<0)return 0;
+ if(position<5)return 0;
+ if(position<8)return 1;
+ if(position===8)return 2;
+ return 3;
+}
+async function monsterEncounter(i,fromChest=false){
+  const overlay=document.getElementById('monsterEncounter');
+  const tile=(Number.isInteger(i)&&i>=0&&cells[i])?cells[i]:viewport;
+  const rect=tile.getBoundingClientRect();
+  const cx=fromChest?window.innerWidth/2:rect.left+rect.width/2,cy=fromChest?window.innerHeight*.48:rect.top+rect.height/2;
+  overlay.style.setProperty('--enc-x',cx+'px');
+  overlay.style.setProperty('--enc-y',cy+'px');
+  // 毎回アニメーションを最初から再生する
+  overlay.hidden=false;
+  overlay.classList.remove('enc-shake');
+  void overlay.offsetWidth;
+  overlay.classList.add('enc-shake');
+  await pause(2800);
+  overlay.hidden=true;
+  overlay.classList.remove('enc-shake');
+}
+
+function chiteiBattleItemCounts(){
+ const counts={heal:0,dice:0,shield:0};
+ const lookup={'かいふくやく':'heal','456ダイス':'dice','ぼろぼろの たて':'shield'};
+ if(Array.isArray(state.found))for(const i of state.found){
+  if(state.types?.[i]==='item'){
+   const k=lookup[itemName(i)];if(k)counts[k]++;
+  }
+ }
+ const w=ensureWallet();
+ for(const k of Object.keys(counts))counts[k]=Math.max(0,counts[k]+(Number(w.items[k])||0)-(Number(w.itemsSpent?.[k])||0));
+ return counts;
+}
+async function battle(isMimic,testOnly=false){
+  return new Promise(resolve=>{
+    const layer=document.getElementById('integratedBattle');
+    const frame=document.getElementById('integratedBattleFrame');
+    const battleData=document.getElementById('integratedBattleData').textContent.trim();
+    let completed=false;
+    function finish(ev){
+      if(ev.source!==frame.contentWindow||!ev.data||ev.data.type!=='mochiusa-battle-result-v1'||completed)return;
+      completed=true;window.removeEventListener('message',finish);window.removeEventListener('message',itemBridge);
+      const win=ev.data.win===true;
+      layer.hidden=true;frame.removeAttribute('srcdoc');
+      if(testOnly){msg.textContent=win?'🧪 ミミックとの テストバトルに かった！':'🧪 テストバトルが おわったよ（きろくは そのまま）'}
+      else if(win){
+        if(isMimic){for(const item of ['pick','heal','dice','shield'])reward(item);msg.textContent='🎉 ミミックに かった！ アイテムぜん4しゅるいを ゲット！'}
+        else if(chiteiEncounterMonster===2||chiteiEncounterMonster===3){for(let n=0;n<2;n++)reward(chooseReward());msg.textContent='🎉 つよい モンスターに かった！ アイテムを 2こ ゲット！'}else{chanceReward();msg.textContent='🎉 モンスターに かった！'}
+      }
+      else{addHistory('モンスターとの たたかいが おわったよ')}
+      render();resolve(win);
+    }
+    function itemBridge(ev){
+      if(ev.source!==frame.contentWindow||ev.data?.type!=='chitei-item-used'||completed)return;
+      const k=ev.data.item;
+      if(!['heal','dice','shield'].includes(k))return;
+      const w=ensureWallet();
+      w.itemsSpent=w.itemsSpent||{};
+      if(chiteiBattleItemCounts()[k]<=0)return;
+      w.itemsSpent[k]=(Number(w.itemsSpent[k])||0)+1;
+      save();render();
+    }
+    window.addEventListener('message',itemBridge);
+    function initItems(){try{frame.contentWindow?.postMessage({type:'chitei-item-init',items:chiteiBattleItemCounts()},'*')}catch(e){}}
+    frame.addEventListener('load',initItems,{once:true});
+    window.addEventListener('message',finish);
+    layer.hidden=false;
+    frame.srcdoc=new TextDecoder().decode(Uint8Array.from(atob(battleData),c=>c.charCodeAt(0))).replace('__MONSTER_INDEX__',String(isMimic?3:chiteiEncounterMonster));
+  });
+}
+async function openChest(type,i,testOnly=false){
+  const layer=document.getElementById('integratedChest'),frame=document.getElementById('integratedChestFrame');
+  const data=document.getElementById('integratedChestData').textContent.trim();
+  const source=new TextDecoder().decode(Uint8Array.from(atob(data),c=>c.charCodeAt(0)));
+  return new Promise(resolve=>{
+    let finished=false,opened=false;
+    const cleanup=()=>{if(finished)return;finished=true;window.removeEventListener('message',receive);layer.hidden=true;frame.removeAttribute('srcdoc');resolve()};
+    const receive=async ev=>{
+      if(finished||ev.source!==frame.contentWindow||ev.data?.type!=='mochiusa-chest-v1')return;
+      if(ev.data.event==='ready'){frame.contentWindow.postMessage({type:'mochiusa-chest-start',kind:type},'*')}
+      else if(ev.data.event==='mimic'){
+        cleanup();if(!testOnly)addHistory('😈 ミミックが あらわれた！');await monsterEncounter(i,true);await battle(true,testOnly);
+      }else if(ev.data.event==='opened'&&!opened){
+        opened=true;let rewards=[];
+        if(type==='emptywood'){if(!testOnly)addHistory('📦 からっぽ だった！');rewards=['📦 からっぽ だった！']}
+        else{
+          // 木箱1個・銀箱2個・金箱3個。4種類を均等確率で独立抽選（重複可）。交換チケットは対象外。
+          const count=type==='gold'?3:type==='silver'?2:1;
+          for(let n=0;n<count;n++){
+            const choice=chooseReward();
+            rewards.push(testOnly?rewardPreview(choice):reward(choice));
+          }
+        }
+        frame.contentWindow.postMessage({type:'mochiusa-chest-reward',text:rewards.join(' ／ ')},'*');
+      }else if(ev.data.event==='closed'){cleanup()}
+    };
+    window.addEventListener('message',receive);layer.hidden=false;frame.srcdoc=source;
+  });
+}
+const POP_ICONS={'つるはし':'⛏️','かいふくやく':'🧪','456ダイス':'🎲','ぼろぼろの たて':'🛡️'};
+async function excavationPop(i,emoji){
+ const el=document.getElementById('excavationPop');
+ const target=cells[i];if(!el||!target)return;
+ const rect=target.getBoundingClientRect();
+ el.style.left=(rect.left+rect.width/2)+'px';el.style.top=(rect.top+rect.height/2)+'px';
+ el.textContent=emoji;el.classList.remove('pop-active');void el.offsetWidth;el.classList.add('pop-active');
+ await pause(850);el.classList.remove('pop-active');el.textContent='';
+}
+async function discover(i){const type=state.types[i];if(state.found.includes(i)||type==='empty')return false;
+// 一度だけ処理する。イベント中の二重操作を防ぐ。
+state.found.push(i);if(type==='special')window.dispatchEvent(new Event('chitei-special-found'));let label='',tap=false;
+if(type==='item'){const name=itemName(i);await excavationPop(i,POP_ICONS[name]||'❔');if(name==='つるはし')label=reward('pick');else{const labels={'かいふくやく':'🧪 かいふくやくを ゲット！','456ダイス':'🎲 456ダイスを ゲット！','ぼろぼろの たて':'🛡️ ぼろぼろの たてを ゲット！'};label=labels[name]||'✨ アイテムを ゲット！';addHistory(label)}await showEvent(label,false)}
+else if(['wood','emptywood','mimic','silver','gold'].includes(type)){label='📦 たからばこを はっけん！';addHistory(label);await openChest(type,i)}
+else if(type==='monster'){chiteiEncounterMonster=chiteiMonsterForCell(i);label='👾 '+CHITEI_MONSTER_NAMES[chiteiEncounterMonster]+'が あらわれた！';addHistory(label);await monsterEncounter(i);await battle(false)}
+else{const messages={stairs:'🌀 ワープゲートを はっけん！',special:'💎 おたからを はっけん！'};label=messages[type]||'✨ なにかを はっけん！';addHistory(label);await showEvent(label,true)}
+render();return true}
+async function select(i){if(moving)return;const nx=i%N,ny=Math.floor(i/N),open=state.open.includes(i);if(nx===x&&ny===y)return;
+if(!open&&!isNear(nx,ny)){msg.textContent='まだ ほっていないマスは、となりだけ ほれるよ';return}
+if(!parent.__teacherMode&&!open&&(state.pick||0)<=0){msg.textContent='⛏️ つるはしが たりないよ！ べんきょうして ふやそう！';return}
+const path=open?findPath(i):[idx(x,y),i];if(!path){msg.textContent='そこへ いく みちが まだ つながっていないよ';return}
+const startFloor=currentFloor;moving=true;activeTarget=i;render();if(!open)await dig(i);else msg.textContent='🐰 えらんだマスまで じどうで いどうするよ！';
+for(let k=1;k<path.length;k++){const dest=path[k],tx=dest%N,ty=Math.floor(dest/N);dir=tx>x?1:tx<x?3:ty>y?0:2;await hop(tx,ty);render();if(await discover(dest)){render()}
+// 階段は発見済みでも、到着するたびに次の階への移動を確認する。
+if(state.types[dest]==='stairs'){
+ const goNext=confirm('🌀 ワープゲートに ついたよ！\nつぎの かいに いく？');
+ if(goNext){if(currentFloor<8)moveFloor(currentFloor+1);else msg.textContent='🌀 ちか9かいは まだ じゅんびちゅうだよ。';}
+ else{msg.textContent='🐰 この かいを もうすこし たんけんしよう！';}
+ break;
+}
+}
+activeTarget=-1;render();if(currentFloor===startFloor&&!state.found.includes(i)&&state.types[i]==='empty')msg.textContent='ぴょん！ とうちゃくしたよ';moving=false}
+document.querySelectorAll('[data-chest-test]').forEach(b=>b.addEventListener('click',async()=>{if(moving)return;moving=true;try{await openChest(b.dataset.chestTest,-1,true)}finally{moving=false;render()}}));
+document.getElementById('add').onclick=()=>{if(moving)return;render();msg.textContent='🧪 テスト中は つるはしを なんどでも つかえるよ'};document.getElementById('reset').onclick=()=>{if(moving)return;if(!confirm('この階のテスト記録を消して、はじめからにしますか？'))return;state=create(currentFloor);x=5;y=5;dir=0;position(x,y);frame(0);render();msg.textContent='まんなかから スタート！'};
+const miniCanvas=document.getElementById('minimap');
+const miniCtx=miniCanvas.getContext('2d');
+const tileDark=new Image(),tileOpen=new Image();
+tileDark.src="images/3dcde5a2816061fa.webp";
+tileOpen.src="images/5511c4b58cffa033.webp";
+tileDark.onload=drawMinimap;tileOpen.onload=drawMinimap;
+function drawMinimap(){
+  if(!miniCtx||!state)return;
+  const c=miniCtx,W=c.canvas.width,T=W/N;
+  miniCtx.clearRect(0,0,W,W);
+  for(let i=0;i<TOTAL;i++){
+    const xx=i%N,yy=Math.floor(i/N),opened=state.open.includes(i),tile=opened?tileOpen:tileDark;
+    if(tile.complete&&tile.naturalWidth)miniCtx.drawImage(tile,xx*T,yy*T,T,T);
+    else{miniCtx.fillStyle=opened?'#cba16d':'#49342d';miniCtx.fillRect(xx*T,yy*T,T,T)}
+    miniCtx.strokeStyle='#221d1a77';miniCtx.lineWidth=.65;miniCtx.strokeRect(xx*T,yy*T,T,T);
+    if(opened&&!state.found.includes(i)&&state.types[i]!=='empty'){
+      miniCtx.fillStyle='#fff3a3';miniCtx.beginPath();miniCtx.arc((xx+.5)*T,(yy+.5)*T,Math.max(2,T*.12),0,Math.PI*2);miniCtx.fill();
+    }
+  }
+  // Viewport rectangle: exact scroll offset, clamped naturally at board edges.
+  const scale=W/board.clientWidth;
+  miniCtx.strokeStyle='#ffdf68';miniCtx.lineWidth=3;
+  miniCtx.strokeRect(viewport.scrollLeft*scale+1.5,viewport.scrollTop*scale+1.5,Math.min(viewport.clientWidth*scale,W-3-viewport.scrollLeft*scale),Math.min(viewport.clientHeight*scale,W-3-viewport.scrollTop*scale));
+  miniCtx.fillStyle='#f58cbd';miniCtx.strokeStyle='#fff';miniCtx.lineWidth=2;
+  miniCtx.beginPath();miniCtx.arc((x+.5)*T,(y+.5)*T,T*.24,0,Math.PI*2);miniCtx.fill();miniCtx.stroke();
+}
+viewport.addEventListener('scroll',drawMinimap,{passive:true});
+
+interaction.hidden=true;fitBoard();position(x,y);frame(0);render();drawMinimap();window.addEventListener('resize',()=>{fitBoard();camera(x,y);drawMinimap()});
