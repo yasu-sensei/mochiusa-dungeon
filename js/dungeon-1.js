@@ -240,7 +240,7 @@ async function select(i){if(moving)return;const nx=i%N,ny=Math.floor(i/N),open=s
 if(!open&&!isNear(nx,ny)){msg.textContent='まだ ほっていないマスは、となりだけ ほれるよ';return}
 if(!parent.__teacherMode&&!open&&(state.pick||0)<=0){msg.textContent='⛏️ つるはしが たりないよ！ べんきょうして ふやそう！';showPickStudyGuide();return}
 const path=open?findPath(i):[idx(x,y),i];if(!path){msg.textContent='そこへ いく みちが まだ つながっていないよ';return}
-const startFloor=currentFloor;moving=true;activeTarget=i;render();if(!open)await dig(i);else msg.textContent='🐰 えらんだマスまで じどうで いどうするよ！';
+const startFloor=currentFloor;moving=true;activeTarget=i;render();if(!open){dir=nx>x?1:nx<x?3:ny>y?0:2;frame(0);await pause(100);await dig(i)}else msg.textContent='🐰 えらんだマスまで じどうで いどうするよ！';
 for(let k=1;k<path.length;k++){const dest=path[k],tx=dest%N,ty=Math.floor(dest/N);dir=tx>x?1:tx<x?3:ty>y?0:2;await hop(tx,ty);render();if(await discover(dest)){render()}
 // 階段は発見済みでも、到着するたびに次の階への移動を確認する。
 if(state.types[dest]==='stairs'){
