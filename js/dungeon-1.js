@@ -145,6 +145,7 @@ async function battle(isMimic,testOnly=false){
     const layer=document.getElementById('integratedBattle');
     const frame=document.getElementById('integratedBattleFrame');
     const battleData=document.getElementById('integratedBattleData').textContent.trim();
+    const battlePickReward=1+Math.floor(Math.random()*3);
     let completed=false;
     function finish(ev){
       if(ev.source!==frame.contentWindow||!ev.data||ev.data.type!=='mochiusa-battle-result-v1'||completed)return;
@@ -153,7 +154,7 @@ async function battle(isMimic,testOnly=false){
       layer.hidden=true;frame.removeAttribute('srcdoc');
       if(testOnly){msg.textContent=win?'🧪 ミミックとの テストバトルに かった！':'🧪 テストバトルが おわったよ（きろくは そのまま）'}
       else if(win){
-        const count=1+Math.floor(Math.random()*3);
+        const count=battlePickReward;
         reward('pick',count);
         const pool=[['heal',30],['dice',25],['shield',25]];
         if(isMimic){for(const item of ['heal','dice','shield'])reward(item)}
@@ -186,7 +187,7 @@ async function battle(isMimic,testOnly=false){
     window.addEventListener('message',finish);
     layer.hidden=false;
     const monsterIndex=isMimic?3:Math.max(0,Math.min(3,Number(chiteiEncounterMonster)||0));
-    frame.srcdoc=new TextDecoder().decode(Uint8Array.from(atob(battleData),c=>c.charCodeAt(0))).replace('__MONSTER_INDEX__',String(monsterIndex)).replace('<script src="js/dungeon-data2-2.js">','<script>window.__MONSTER_INDEX__='+monsterIndex+';<\/script><script src="js/dungeon-data2-2.js">');
+    frame.srcdoc=new TextDecoder().decode(Uint8Array.from(atob(battleData),c=>c.charCodeAt(0))).replace('__MONSTER_INDEX__',String(monsterIndex)).replace('<script src="js/dungeon-data2-2.js">','<script>window.__MONSTER_INDEX__='+monsterIndex+';window.__battlePickReward='+battlePickReward+';window.__battlePickLoss='+Math.min(2,Math.max(0,Number(state.pick)||0))+';window.__battleTestOnly='+Boolean(testOnly)+';<\/script><script src="js/dungeon-data2-2.js">');
   });
 }
 async function openChest(type,i,testOnly=false){
