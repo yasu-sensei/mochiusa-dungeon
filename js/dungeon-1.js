@@ -153,10 +153,21 @@ async function battle(isMimic,testOnly=false){
       layer.hidden=true;frame.removeAttribute('srcdoc');
       if(testOnly){msg.textContent=win?'🧪 ミミックとの テストバトルに かった！':'🧪 テストバトルが おわったよ（きろくは そのまま）'}
       else if(win){
-        if(isMimic){for(const item of ['pick','heal','dice','shield'])reward(item);msg.textContent='🎉 ミミックに かった！ アイテムぜん4しゅるいを ゲット！'}
-        else if(chiteiEncounterMonster===2||chiteiEncounterMonster===3){for(let n=0;n<2;n++)reward(chooseReward());msg.textContent='🎉 つよい モンスターに かった！ アイテムを 2こ ゲット！'}else{chanceReward();msg.textContent='🎉 モンスターに かった！'}
+        const count=1+Math.floor(Math.random()*3);
+        reward('pick',count);
+        const pool=[['heal',30],['dice',25],['shield',25]];
+        if(isMimic){for(const item of ['heal','dice','shield'])reward(item)}
+        else if(chiteiEncounterMonster===2||chiteiEncounterMonster===3){for(let n=0;n<2;n++)reward(chooseReward(pool))}
+        else if(Math.random()<0.5)reward(chooseReward(pool));
+        msg.textContent='🎉 しょうり！ つるはしを '+count+'ほん ゲット！';
       }
-      else{addHistory('モンスターとの たたかいが おわったよ')}
+      else{
+        const lost=Math.min(2,Math.max(0,Number(state.pick)||0));
+        state.pick=Math.max(0,(Number(state.pick)||0)-lost);
+        msg.textContent='💦 まけちゃった… つるはしが '+lost+'ほん へったよ';
+        addHistory(msg.textContent);
+      }
+      if(!testOnly)save();
       render();resolve(win);
     }
     function itemBridge(ev){
