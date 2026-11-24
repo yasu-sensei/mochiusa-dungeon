@@ -174,7 +174,8 @@ async function battle(isMimic,testOnly=false){
     frame.addEventListener('load',initItems,{once:true});
     window.addEventListener('message',finish);
     layer.hidden=false;
-    frame.srcdoc=new TextDecoder().decode(Uint8Array.from(atob(battleData),c=>c.charCodeAt(0))).replace('__MONSTER_INDEX__',String(isMimic?3:chiteiEncounterMonster));
+    const monsterIndex=isMimic?3:Math.max(0,Math.min(3,Number(chiteiEncounterMonster)||0));
+    frame.srcdoc=new TextDecoder().decode(Uint8Array.from(atob(battleData),c=>c.charCodeAt(0))).replace('__MONSTER_INDEX__',String(monsterIndex)).replace('<script src="js/dungeon-data2-2.js">','<script>window.__MONSTER_INDEX__='+monsterIndex+';<\/script><script src="js/dungeon-data2-2.js">');
   });
 }
 async function openChest(type,i,testOnly=false){
