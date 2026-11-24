@@ -3,7 +3,7 @@ const sprites={"0_0": "images/d53232930153cc8f.webp", "1_0": "images/f5dcbe15f53
 const N=10, TOTAL=100, KEY='mochiusa_underground_B1_prototype_10x10_v1';
 const FLOOR_KEY_2='mochiusa_underground_B2_prototype_10x10_v1';
 const FLOOR_ACTIVE_KEY='mochiusa_underground_active_floor_v16';
-let currentFloor=Math.max(1,Math.min(8,Number(localStorage.getItem(FLOOR_ACTIVE_KEY))||1));
+let currentFloor=Math.max(1,Math.min(17,Number(localStorage.getItem(FLOOR_ACTIVE_KEY))||1));
 function floorKey(f){return f===1?KEY:f===2?FLOOR_KEY_2:'mochiusa_underground_B'+f+'_prototype_10x10_v1';}
 function readFloor(f){try{return JSON.parse(localStorage.getItem(floorKey(f)))}catch(e){return null}}
 function validFloor(s){return s&&Array.isArray(s.open)&&Array.isArray(s.found)&&Array.isArray(s.types)&&s.types.length===TOTAL}
@@ -22,13 +22,13 @@ function create(floor=currentFloor){
 }
 let state=readFloor(currentFloor);if(!validFloor(state))state=create(currentFloor);
 // つるはしとアイテムは階をまたいで引き継ぐ。
-const priorFloor=[1,2,3,4,5,6,7,8].filter(f=>f!==currentFloor).map(readFloor).filter(validFloor).sort((a,b)=>(b._sharedAt||0)-(a._sharedAt||0))[0];
+const priorFloor=Array.from({length:17},(_,i)=>i+1).filter(f=>f!==currentFloor).map(readFloor).filter(validFloor).sort((a,b)=>(b._sharedAt||0)-(a._sharedAt||0))[0];
 if(validFloor(priorFloor)&&priorFloor._sharedAt>(state._sharedAt||0)){state.pick=priorFloor.pick;state.wallet=priorFloor.wallet;}
 x=state.x;y=state.y;
 const icons={item:'',monster:'👾',wood:'‼️',emptywood:'‼️',mimic:'‼️',silver:'‼️',gold:'‼️',stairs:'🌀',special:'💎',empty:''};const cells=[];
 function save(){state._sharedAt=Date.now();localStorage.setItem(floorKey(currentFloor),JSON.stringify(state));localStorage.setItem(FLOOR_ACTIVE_KEY,String(currentFloor));updateFloorLabel();}function updateFloorLabel(){const label=document.getElementById('floorLabel');if(label)label.textContent='地下'+currentFloor+'階';const back=document.getElementById('backFloor1');if(back)back.style.display=currentFloor>1?'block':'none';}
 function moveFloor(next){
- if(next<1||next>8)return;
+ if(next<1||next>17)return;
  save();const sharedPick=state.pick,sharedWallet=state.wallet;
  currentFloor=next;
  let nextState=readFloor(next);
@@ -232,7 +232,7 @@ for(let k=1;k<path.length;k++){const dest=path[k],tx=dest%N,ty=Math.floor(dest/N
 // 階段は発見済みでも、到着するたびに次の階への移動を確認する。
 if(state.types[dest]==='stairs'){
  const goNext=confirm('🌀 ワープゲートに ついたよ！\nつぎの かいに いく？');
- if(goNext){if(currentFloor<8)moveFloor(currentFloor+1);else msg.textContent='🌀 ちか9かいは まだ じゅんびちゅうだよ。';}
+ if(goNext){if(currentFloor<17)moveFloor(currentFloor+1);else msg.textContent='🌀 ちか18かいは まだ じゅんびちゅうだよ。';}
  else{msg.textContent='🐰 この かいを もうすこし たんけんしよう！';}
  break;
 }
