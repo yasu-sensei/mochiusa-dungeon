@@ -146,6 +146,8 @@ async function battle(isMimic,testOnly=false){
     const frame=document.getElementById('integratedBattleFrame');
     const battleData=document.getElementById('integratedBattleData').textContent.trim();
     const battlePickReward=1+Math.floor(Math.random()*3);
+    const pool=[['heal',30],['dice',25],['shield',25]];
+    const battleDrops=isMimic?['heal','dice','shield']:(chiteiEncounterMonster===2||chiteiEncounterMonster===3)?[chooseReward(pool),chooseReward(pool)]:Math.random()<0.5?[chooseReward(pool)]:[];
     let completed=false;
     function finish(ev){
       if(ev.source!==frame.contentWindow||!ev.data||ev.data.type!=='mochiusa-battle-result-v1'||completed)return;
@@ -156,10 +158,7 @@ async function battle(isMimic,testOnly=false){
       else if(win){
         const count=battlePickReward;
         reward('pick',count);
-        const pool=[['heal',30],['dice',25],['shield',25]];
-        if(isMimic){for(const item of ['heal','dice','shield'])reward(item)}
-        else if(chiteiEncounterMonster===2||chiteiEncounterMonster===3){for(let n=0;n<2;n++)reward(chooseReward(pool))}
-        else if(Math.random()<0.5)reward(chooseReward(pool));
+        for(const item of battleDrops)reward(item);
         msg.textContent='🎉 しょうり！ つるはしを '+count+'ほん ゲット！';
       }
       else{
@@ -187,7 +186,7 @@ async function battle(isMimic,testOnly=false){
     window.addEventListener('message',finish);
     layer.hidden=false;
     const monsterIndex=isMimic?3:Math.max(0,Math.min(3,Number(chiteiEncounterMonster)||0));
-    frame.srcdoc=new TextDecoder().decode(Uint8Array.from(atob(battleData),c=>c.charCodeAt(0))).replace('__MONSTER_INDEX__',String(monsterIndex)).replace('<script src="js/dungeon-data2-2.js">','<script>window.__MONSTER_INDEX__='+monsterIndex+';window.__battlePickReward='+battlePickReward+';window.__battlePickLoss='+Math.min(2,Math.max(0,Number(state.pick)||0))+';window.__battleTestOnly='+Boolean(testOnly)+';<\/script><script src="js/dungeon-data2-2.js">');
+    frame.srcdoc=new TextDecoder().decode(Uint8Array.from(atob(battleData),c=>c.charCodeAt(0))).replace('__MONSTER_INDEX__',String(monsterIndex)).replace('<script src="js/dungeon-data2-2.js">','<script>window.__MONSTER_INDEX__='+monsterIndex+';window.__battlePickReward='+battlePickReward+';window.__battlePickLoss='+Math.min(2,Math.max(0,Number(state.pick)||0))+';window.__battleTestOnly='+Boolean(testOnly)+';window.__battleDrops='+JSON.stringify(battleDrops)+';<\/script><script src="js/dungeon-data2-2.js">');
   });
 }
 async function openChest(type,i,testOnly=false){
