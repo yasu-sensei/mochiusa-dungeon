@@ -224,9 +224,10 @@ else if(['wood','emptywood','mimic','silver','gold'].includes(type)){label='📦
 else if(type==='monster'){chiteiEncounterMonster=chiteiMonsterForCell(i);label='👾 '+CHITEI_MONSTER_NAMES[chiteiEncounterMonster]+'が あらわれた！';addHistory(label);await monsterEncounter(i);await battle(false)}
 else if(type==='special'&&typeof window.chiteiAwardTreasure==='function'){addHistory('💎 おたからを はっけん！')}else{const messages={stairs:'🌀 ワープゲートを はっけん！',special:'💎 おたからを はっけん！'};label=messages[type]||'✨ なにかを はっけん！';addHistory(label);await showEvent(label,true)}
 render();return true}
+function showPickStudyGuide(){if(parent.__teacherMode||document.getElementById('pickStudyGuide'))return;const d=document.createElement('dialog');d.id='pickStudyGuide';d.style.cssText='width:min(90vw,480px);border:2px solid #dfb96d;border-radius:18px;background:#172b46;color:#ffe6a5;text-align:center;padding:24px';const h=document.createElement('h2');h.textContent='⛏️ つるはしが なくなったよ！';const p=document.createElement('p');p.textContent='べんきょうを して、つるはしを ゲットしよう！';p.style.fontSize='20px';const go=document.createElement('button'),close=document.createElement('button');go.textContent='📖 べんきょうする';close.textContent='とじる';for(const b of [go,close])b.style.cssText='padding:12px;margin:6px;border-radius:10px;font-size:18px;font-weight:bold';go.style.background='#dfb96d';go.onclick=()=>{d.close();document.getElementById('openStudy')?.click()};close.onclick=()=>d.close();d.addEventListener('close',()=>d.remove(),{once:true});d.append(h,p,go,close);document.body.append(d);d.showModal()}
 async function select(i){if(moving)return;const nx=i%N,ny=Math.floor(i/N),open=state.open.includes(i);if(nx===x&&ny===y)return;
 if(!open&&!isNear(nx,ny)){msg.textContent='まだ ほっていないマスは、となりだけ ほれるよ';return}
-if(!parent.__teacherMode&&!open&&(state.pick||0)<=0){msg.textContent='⛏️ つるはしが たりないよ！ べんきょうして ふやそう！';return}
+if(!parent.__teacherMode&&!open&&(state.pick||0)<=0){msg.textContent='⛏️ つるはしが たりないよ！ べんきょうして ふやそう！';showPickStudyGuide();return}
 const path=open?findPath(i):[idx(x,y),i];if(!path){msg.textContent='そこへ いく みちが まだ つながっていないよ';return}
 const startFloor=currentFloor;moving=true;activeTarget=i;render();if(!open)await dig(i);else msg.textContent='🐰 えらんだマスまで じどうで いどうするよ！';
 for(let k=1;k<path.length;k++){const dest=path[k],tx=dest%N,ty=Math.floor(dest/N);dir=tx>x?1:tx<x?3:ty>y?0:2;await hop(tx,ty);render();if(await discover(dest)){render()}
@@ -238,7 +239,7 @@ if(state.types[dest]==='stairs'){
  break;
 }
 }
-activeTarget=-1;render();if(currentFloor===startFloor&&!state.found.includes(i)&&state.types[i]==='empty')msg.textContent='ぴょん！ とうちゃくしたよ';moving=false}
+activeTarget=-1;render();if(currentFloor===startFloor&&!state.found.includes(i)&&state.types[i]==='empty')msg.textContent='ぴょん！ とうちゃくしたよ';moving=false;if(!open&&!parent.__teacherMode&&(state.pick||0)<=0)showPickStudyGuide()}
 document.querySelectorAll('[data-chest-test]').forEach(b=>b.addEventListener('click',async()=>{if(moving)return;moving=true;try{await openChest(b.dataset.chestTest,-1,true)}finally{moving=false;render()}}));
 document.getElementById('add').onclick=()=>{if(moving)return;render();msg.textContent='🧪 テスト中は つるはしを なんどでも つかえるよ'};document.getElementById('reset').onclick=()=>{if(moving)return;if(!confirm('この階のテスト記録を消して、はじめからにしますか？'))return;state=create(currentFloor);x=5;y=5;dir=0;position(x,y);frame(0);render();msg.textContent='まんなかから スタート！'};
 const miniCanvas=document.getElementById('minimap');
