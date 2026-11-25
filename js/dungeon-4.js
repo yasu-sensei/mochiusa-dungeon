@@ -29,7 +29,7 @@ function start(mode,automatic=false){
  if(!tutorialActive&&!parent.__teacherMode){d[mode]++;persist(d);}
  active={mode,finished:false};document.getElementById('studyTitle').textContent=tutorialActive?title[mode].replace('15','3'):title[mode];
  document.getElementById('studyProgress').textContent=tutorialActive?'れんしゅう 3もん':parent.__teacherMode?'むせいげんモード':'きょうの '+d[mode]+'/2かいめ';
- frame.srcdoc=tutorialActive?LESSONS[mode].replace(/questions=makeSet\(\)/g,'questions='+JSON.stringify(mode==='kanji'?[{word:'一年',reading:'いちねん',mode:'input'},{word:'上がる',reading:'あがる',mode:'input'},{word:'三つ',reading:'みっつ',mode:'input'}]:[{word:'ネコ',mode:'anagram'},{word:'バス',mode:'anagram'},{word:'テレビ',mode:'anagram'}])+'').replace(/index>=15/g,'index>=3').replace(/index===15/g,'index===3').replace(/total:15/g,'total:3').replace(/15もん/g,'3もん').replace(/correct===15\?13:correct>=13\?11:correct>=11\?9:correct>=8\?7:5/g,'5'):LESSONS[mode];document.getElementById('dungeonModal')?.classList.remove('active');overlay.classList.add('active');refresh();
+ frame.srcdoc=tutorialActive?LESSONS[mode].replace(/questions=makeSet\(\)/g,'questions='+JSON.stringify(mode==='kanji'?[{word:'一年',reading:'いちねん',mode:'input'},{word:'上がる',reading:'あがる',mode:'input'},{word:'三つ',reading:'みっつ',mode:'input'}]:[{word:'ネコ',mode:'anagram'},{word:'バス',mode:'anagram'},{word:'テレビ',mode:'anagram'}])+'').replace(/index>=15/g,'index>=3').replace(/index===15/g,'index===3').replace(/total:15/g,'total:3').replace(/15もん/g,'3もん').replace(/correct===15\?13:correct>=13\?11:correct>=11\?9:correct>=8\?7:5/g,'2'):LESSONS[mode];document.getElementById('dungeonModal')?.classList.remove('active');overlay.classList.add('active');refresh();
 }
 let closingStudy=false;
 function close(){
@@ -54,7 +54,7 @@ window.addEventListener('message',event=>{
  const d=event.data;if(!d||d.source!=='underground-study-v1'||d.event!=='completed'||d.mode!==active.mode||active.finished)return;
  if(d.total!==(tutorialActive?3:15)||!Number.isInteger(d.correct)||d.correct<0||d.correct>d.total)return;
  active.finished=true;
- if(tutorialActive){state.tutorialStudy=state.tutorialStudy||{};state.tutorialStudy[d.mode]=true;}const gained=tutorialActive?5:award(d.correct);state.pick+=gained;save();render();
+ if(tutorialActive){state.tutorialStudy=state.tutorialStudy||{};state.tutorialStudy[d.mode]=true;}const gained=tutorialActive?2:award(d.correct);state.pick+=gained;save();render();
  msg.textContent=`🎉 ${d.correct}/${d.total}もん せいかい！ つるはしを ${gained}ほん ゲット！`;
  document.getElementById('studyProgress').textContent=`${d.correct}/${d.total}もん　⛏️ +${gained}ほん`;
  refresh();
