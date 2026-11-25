@@ -189,7 +189,7 @@ async function battle(isMimic,testOnly=false){
     window.addEventListener('message',finish);
     layer.hidden=false;
     const monsterIndex=isMimic?3:Math.max(0,Math.min(3,Number(chiteiEncounterMonster)||0));
-    frame.srcdoc=new TextDecoder().decode(Uint8Array.from(atob(battleData),c=>c.charCodeAt(0))).replace('__MONSTER_INDEX__',String(monsterIndex)).replace('<script src="js/dungeon-data2-2.js">','<script>window.__tutorialBattle='+String(currentFloor===0)+';window.__MONSTER_INDEX__='+monsterIndex+';window.__battlePickReward='+battlePickReward+';window.__battlePickLoss='+Math.min(2,Math.max(0,Number(state.pick)||0))+';window.__battleTestOnly='+Boolean(testOnly)+';window.__battleDrops='+JSON.stringify(battleDrops)+';<\/script><script src="js/dungeon-data2-2.js">');
+    frame.srcdoc=new TextDecoder().decode(Uint8Array.from(atob(battleData),c=>c.charCodeAt(0))).replace('__MONSTER_INDEX__',String(monsterIndex)).replace('<script src="js/dungeon-data2-1.js">','<script>window.__tutorialBattle='+String(currentFloor===0)+';<\/script><script src="js/dungeon-data2-1.js">').replace('<script src="js/dungeon-data2-2.js">','<script>window.__tutorialBattle='+String(currentFloor===0)+';window.__MONSTER_INDEX__='+monsterIndex+';window.__battlePickReward='+battlePickReward+';window.__battlePickLoss='+Math.min(2,Math.max(0,Number(state.pick)||0))+';window.__battleTestOnly='+Boolean(testOnly)+';window.__battleDrops='+JSON.stringify(battleDrops)+';<\/script><script src="js/dungeon-data2-2.js">');
   });
 }
 async function openChest(type,i,testOnly=false){
