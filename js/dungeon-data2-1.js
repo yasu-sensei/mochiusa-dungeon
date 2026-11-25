@@ -4,9 +4,10 @@ const sprites={"0_0": "images/d53232930153cc8f.webp", "1_0": "images/f5dcbe15f53
 const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const battleDragon=!window.__tutorialBattle&&localStorage.getItem('mochiusa_character_unlock_tenseiryu_v1')==='1'&&localStorage.getItem('mochiusa_character_choice_v1')==='tenseiryu';
 const battleCat=!window.__tutorialBattle&&localStorage.getItem('mochiusa_character_unlock_kagineko_v1')==='1'&&localStorage.getItem('mochiusa_character_choice_v1')==='kagineko';
-const battleHeroName=battleCat?'カギネコ':battleDragon?'テンセイリュウ':'モチウサ';
-$('mochi').src=battleCat?'images/kagineko_battle.webp':battleDragon?'images/tenseiryu_battle.webp':'images/a1c6b21fe72d524d.webp';
-if(battleDragon||battleCat){$('mochi').style.scale=battleDragon?'1.6':'1.3';$('mochi').style.transformOrigin='center bottom';$('mochi').alt=battleHeroName;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(!['SCRIPT','STYLE'].includes(node.parentElement?.tagName)&&node.nodeValue.includes('モチウサ'))node.nodeValue=node.nodeValue.replaceAll('モチウサ',battleHeroName);}}
+const battleChrono=!window.__tutorialBattle&&localStorage.getItem('mochiusa_character_unlock_jikuronosu_v1')==='1'&&localStorage.getItem('mochiusa_character_choice_v1')==='jikuronosu';
+const battleHeroName=battleChrono?'ジクロノス':battleCat?'カギネコ':battleDragon?'テンセイリュウ':'モチウサ';
+$('mochi').src=battleChrono?'images/jikuronosu_battle.webp':battleCat?'images/kagineko_battle.webp':battleDragon?'images/tenseiryu_battle.webp':'images/a1c6b21fe72d524d.webp';
+if(battleDragon||battleCat||battleChrono){$('mochi').style.scale=battleChrono?'1.6':battleDragon?'1.6':'1.3';$('mochi').style.transformOrigin='center bottom';$('mochi').alt=battleHeroName;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(!['SCRIPT','STYLE'].includes(node.parentElement?.tagName)&&node.nodeValue.includes('モチウサ'))node.nodeValue=node.nodeValue.replaceAll('モチウサ',battleHeroName);}}
 const enemyMax=window.__tutorialBattle?4:parent.parent.__teacherMode?2:25;let hp=25,ehp=enemyMax,turn='start',busy=false,ended=false,potion=0,dice456=0,armed456=false,brokenShield=0,shieldReady=false,round=0;
 const positions={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 function showDie(n,id='die'){const el=$(id);const p=el.children;el.classList.toggle('one-face',n===1);for(let i=0;i<9;i++)p[i].style.visibility=positions[n]?.includes(i)?'visible':'hidden'}
