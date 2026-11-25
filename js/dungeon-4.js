@@ -19,17 +19,17 @@ box.innerHTML='<strong>📚 べんきょうして つるはしを もらおう�
 const side=document.querySelector('.side');if(side)side.insertBefore(box,side.firstChild);else document.body.prepend(box);
 function refresh(){
  const d=read();document.getElementById('studyCounts').textContent=parent.__teacherMode?'かん字・カタカナ：むせいげん':'きょうの のこり：かん字 '+(2-d.kanji)+'かい ／ カタカナ '+(2-d.katakana)+'かい';
- document.getElementById('studyKanji').disabled=!!active||(!parent.__teacherMode&&d.kanji>=2);
- document.getElementById('studyKata').disabled=!!active||(!parent.__teacherMode&&d.katakana>=2);
+ document.getElementById('studyKanji').disabled=!!active||(!tutorialActive&&!parent.__teacherMode&&d.kanji>=2);
+ document.getElementById('studyKata').disabled=!!active||(!tutorialActive&&!parent.__teacherMode&&d.katakana>=2);
 }
 function start(mode,automatic=false){
  if(active||closingStudy||moving)return;
- const d=read();if(!parent.__teacherMode&&d[mode]>=2){alert('きょうは もう 2かい べんきょうしたよ！');return;}
+ const d=read();if(!tutorialActive&&!parent.__teacherMode&&d[mode]>=2){alert('きょうは もう 2かい べんきょうしたよ！');return;}
 
- if(!parent.__teacherMode){d[mode]++;persist(d);}
+ if(!tutorialActive&&!parent.__teacherMode){d[mode]++;persist(d);}
  active={mode,finished:false};document.getElementById('studyTitle').textContent=title[mode];
  document.getElementById('studyProgress').textContent=parent.__teacherMode?'むせいげんモード':'きょうの '+d[mode]+'/2かいめ';
- frame.srcdoc=LESSONS[mode];document.getElementById('dungeonModal')?.classList.remove('active');overlay.classList.add('active');refresh();
+ frame.srcdoc=tutorialActive?LESSONS[mode].replace(/questions=makeSet\(\)/g,'questions=makeSet().slice(0,3)').replace(/index>=15/g,'index>=3').replace(/index===15/g,'index===3').replace(/total:15/g,'total:3').replace(/15もん/g,'3もん').replace(/correct===15\?13:correct>=13\?11:correct>=11\?9:correct>=8\?7:5/g,'5'):LESSONS[mode];document.getElementById('dungeonModal')?.classList.remove('active');overlay.classList.add('active');refresh();
 }
 let closingStudy=false;
 function close(){
@@ -52,9 +52,9 @@ document.getElementById('studyClose').onclick=close;
 window.addEventListener('message',event=>{
  if(!active||event.source!==frame.contentWindow)return;
  const d=event.data;if(!d||d.source!=='underground-study-v1'||d.event!=='completed'||d.mode!==active.mode||active.finished)return;
- if(d.total!==15||!Number.isInteger(d.correct)||d.correct<0||d.correct>15)return;
+ if(d.total!==(tutorialActive?3:15)||!Number.isInteger(d.correct)||d.correct<0||d.correct>d.total)return;
  active.finished=true;
- const gained=award(d.correct);state.pick+=gained;save();render();
+ const gained=tutorialActive?5:award(d.correct);state.pick+=gained;save();render();
  msg.textContent=`🎉 ${d.correct}/15もん せいかい！ つるはしを ${gained}ほん ゲット！`;
  document.getElementById('studyProgress').textContent=`${d.correct}/15もん　⛏️ +${gained}ほん`;
  refresh();
