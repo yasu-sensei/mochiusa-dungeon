@@ -2,12 +2,15 @@ function battleDropMessage(win){if(!win||window.__battleTestOnly!==false||!Array
 
 const sprites={"0_0": "images/d53232930153cc8f.webp", "1_0": "images/f5dcbe15f535a4df.webp", "2_0": "images/bb3db842589154ec.webp", "3_0": "images/b55a6d9923b5e164.webp", "0_1": "images/730627ffc9482751.webp", "1_1": "images/09cf6c5b24dd376d.webp", "2_1": "images/3b0c448009ba91e7.webp", "3_1": "images/897f4e9810605dfa.webp", "0_2": "images/debc4eea12212ab4.webp", "1_2": "images/c0034a1b1a4ef1c9.webp", "2_2": "images/434981431e8e88d7.webp", "3_2": "images/55db315f32922f5a.webp"};
 const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms));
-$('mochi').src='images/a1c6b21fe72d524d.webp';
+const battleDragon=!window.__tutorialBattle&&localStorage.getItem('mochiusa_character_unlock_tenseiryu_v1')==='1'&&localStorage.getItem('mochiusa_character_choice_v1')==='tenseiryu';
+const battleHeroName=battleDragon?'テンセイリュウ':'モチウサ';
+$('mochi').src=battleDragon?'images/tenseiryu_battle.webp':'images/a1c6b21fe72d524d.webp';
+if(battleDragon){$('mochi').alt=battleHeroName;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(!['SCRIPT','STYLE'].includes(node.parentElement?.tagName)&&node.nodeValue.includes('モチウサ'))node.nodeValue=node.nodeValue.replaceAll('モチウサ',battleHeroName);}}
 const enemyMax=window.__tutorialBattle?4:parent.parent.__teacherMode?2:25;let hp=25,ehp=enemyMax,turn='start',busy=false,ended=false,potion=0,dice456=0,armed456=false,brokenShield=0,shieldReady=false,round=0;
 const positions={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 function showDie(n,id='die'){const el=$(id);const p=el.children;el.classList.toggle('one-face',n===1);for(let i=0;i<9;i++)p[i].style.visibility=positions[n]?.includes(i)?'visible':'hidden'}
 showDie(1);showDie(1,'die2');
-let tutorialDiceUsed=false;function tutorialNeedsDice(){return window.__tutorialBattle&&!tutorialDiceUsed&&!armed456&&dice456>0}function tutorialGlow(el,on){if(!el)return;el.style.outline=on?'4px solid #fff18a':'';el.style.boxShadow=on?'0 0 20px #ffd54f':'';}function ui(){ $('php').textContent=hp+' / 25';$('ehp').textContent=ehp+' / '+enemyMax;for(const [id,v] of [['pbar',hp],['ebar',ehp]]){$(id).style.width=v/(id==='ebar'?enemyMax:25)*100+'%';$(id).classList.toggle('low',v<=5)}$('roll').disabled=busy||ended||turn==='enemy'||(turn==='hero'&&tutorialNeedsDice());$('roll').textContent=turn==='start'?'🎯 ルーレットを まわす':'🎲 サイコロ';$('item').disabled=busy||ended||turn!=='hero';$('phase').textContent=ended?'けっちゃく！':turn==='start'?'せんこう こうこう':turn==='hero'?'モチウサの ばん':'モンスターの ばん';if(window.__tutorialBattle){const need=turn==='hero'&&tutorialNeedsDice()&&!busy&&!ended;const ready=turn==='hero'&&armed456&&!busy&&!ended;tutorialGlow($('item'),need);tutorialGlow($('roll'),ready);if(need)message('さっき ひろった 456ダイスを つかってみよう！');if(ready)message('サイコロを ふってみよう！');}}
+let tutorialDiceUsed=false;function tutorialNeedsDice(){return window.__tutorialBattle&&!tutorialDiceUsed&&!armed456&&dice456>0}function tutorialGlow(el,on){if(!el)return;el.style.outline=on?'4px solid #fff18a':'';el.style.boxShadow=on?'0 0 20px #ffd54f':'';}function ui(){ $('php').textContent=hp+' / 25';$('ehp').textContent=ehp+' / '+enemyMax;for(const [id,v] of [['pbar',hp],['ebar',ehp]]){$(id).style.width=v/(id==='ebar'?enemyMax:25)*100+'%';$(id).classList.toggle('low',v<=5)}$('roll').disabled=busy||ended||turn==='enemy'||(turn==='hero'&&tutorialNeedsDice());$('roll').textContent=turn==='start'?'🎯 ルーレットを まわす':'🎲 サイコロ';$('item').disabled=busy||ended||turn!=='hero';$('phase').textContent=ended?'けっちゃく！':turn==='start'?'せんこう こうこう':turn==='hero'?battleHeroName+'の ばん':'モンスターの ばん';if(window.__tutorialBattle){const need=turn==='hero'&&tutorialNeedsDice()&&!busy&&!ended;const ready=turn==='hero'&&armed456&&!busy&&!ended;tutorialGlow($('item'),need);tutorialGlow($('roll'),ready);if(need)message('さっき ひろった 456ダイスを つかってみよう！');if(ready)message('サイコロを ふってみよう！');}}
 function message(t){$('status').textContent=t}
 function modal(title,body,buttons){$('modal').innerHTML='<h2>'+title+'</h2><p>'+body+'</p>';for(const [label,fn,disabled] of buttons){const b=document.createElement('button');b.textContent=label;b.disabled=!!disabled;b.onclick=()=>{close();fn()};$('modal').append(b)}$('overlay').classList.add('show')}
 function close(){$('overlay').classList.remove('show')}
@@ -114,9 +117,9 @@ async function spinRoulette(){
  await sleep(3450);
  return green;
 }
-async function rollClick(){if(busy||ended||turn==='enemy'||(turn==='hero'&&tutorialNeedsDice()))return;busy=true;ui();if(turn==='start'){message('ルーレットで せんこうを きめよう！');const green=await spinRoulette();$('rollText').textContent=green?'🟢 みどり！':'🔴 あか！';turn=green?'hero':'enemy';message(green?'🟢 モチウサが せんこう！':'🔴 モンスターが せんこう！');await sleep(1050);showRoulette(false);busy=false;ui();if(turn==='enemy'){await sleep(600);enemyTurn()}return}
-message('モチウサが サイコロを ふる！');const n=await animateDice(true,ehp);$('rollText').textContent=n+' ダメージ！';if(ehp<=n){await lethalAttack(true,n,n);return}jolt('heroBox','strike');await sleep(260);ehp=Math.max(0,ehp-n);jolt('enemyBox','enemyhurt');pop('left',n);message('モンスターに '+n+' ダメージ！');ui();await sleep(900);turn='enemy';busy=false;ui();await sleep(500);enemyTurn()}
-async function enemyTurn(){if(ended||turn!=='enemy'||busy)return;busy=true;ui();message('モンスターが サイコロを ふる！');await sleep(380);const n=await animateDice(false,hp);$('rollText').textContent=n+' ダメージ！';const blocked=shieldReady?2+Math.floor(Math.random()*4):0;shieldReady=false;const damage=Math.max(0,n-blocked);if(blocked){await itemFx('shatter','🛡️','−'+blocked,1200)}updateItemIndicators();if(hp<=damage){await lethalAttack(false,n,damage);return}jolt('enemyBox','enemystrike');await sleep(260);hp=Math.max(0,hp-damage);jolt('heroBox','herohurt');pop('right',damage);message('モチウサに '+damage+' ダメージ！');ui();await sleep(1000);turn='hero';busy=false;message('モチウサの ばん！ サイコロか アイテムを えらぼう');ui()}
+async function rollClick(){if(busy||ended||turn==='enemy'||(turn==='hero'&&tutorialNeedsDice()))return;busy=true;ui();if(turn==='start'){message('ルーレットで せんこうを きめよう！');const green=await spinRoulette();$('rollText').textContent=green?'🟢 みどり！':'🔴 あか！';turn=green?'hero':'enemy';message(green?'🟢 '+battleHeroName+'が せんこう！':'🔴 モンスターが せんこう！');await sleep(1050);showRoulette(false);busy=false;ui();if(turn==='enemy'){await sleep(600);enemyTurn()}return}
+message(battleHeroName+'が サイコロを ふる！');const n=await animateDice(true,ehp);$('rollText').textContent=n+' ダメージ！';if(ehp<=n){await lethalAttack(true,n,n);return}jolt('heroBox','strike');await sleep(260);ehp=Math.max(0,ehp-n);jolt('enemyBox','enemyhurt');pop('left',n);message('モンスターに '+n+' ダメージ！');ui();await sleep(900);turn='enemy';busy=false;ui();await sleep(500);enemyTurn()}
+async function enemyTurn(){if(ended||turn!=='enemy'||busy)return;busy=true;ui();message('モンスターが サイコロを ふる！');await sleep(380);const n=await animateDice(false,hp);$('rollText').textContent=n+' ダメージ！';const blocked=shieldReady?2+Math.floor(Math.random()*4):0;shieldReady=false;const damage=Math.max(0,n-blocked);if(blocked){await itemFx('shatter','🛡️','−'+blocked,1200)}updateItemIndicators();if(hp<=damage){await lethalAttack(false,n,damage);return}jolt('enemyBox','enemystrike');await sleep(260);hp=Math.max(0,hp-damage);jolt('heroBox','herohurt');pop('right',damage);message(battleHeroName+'に '+damage+' ダメージ！');ui();await sleep(1000);turn='hero';busy=false;message(battleHeroName+'の ばん！ サイコロか アイテムを えらぼう');ui()}
 async function finalParticles(){
  const target=$('enemyBox').querySelector('.character');const r=target.getBoundingClientRect();
  const dx=parseFloat(target.style.getPropertyValue('--flight-x'))||0,dy=parseFloat(target.style.getPropertyValue('--flight-ground'))||0;const cx=r.left+r.width*.45+dx,cy=r.top+r.height*.53+dy;
@@ -177,13 +180,13 @@ async function lethalAttack(win,n,damage){
   message('✨ モンスターが ひかりになって きえた！');
   await finalParticles();loser.classList.add('final-gone');
  }else{
-  message('💦 モチウサは たおれてしまった…');
+  message('💦 '+battleHeroName+'は たおれてしまった…');
   await sleep(1700);
  }
  dust.remove();arena.classList.remove('ko-sepia');
  await sleep(550);
  ended=true;turn='done';busy=false;ui();
- message(win?'🎉 モチウサの かち！':'💦 モンスターの かち…');
+ message(win?'🎉 '+battleHeroName+'の かち！':'💦 モンスターの かち…');
  modal(win?'🎉 しょうり！':'💦 まけちゃった…',(win?'モンスターを たおした！':'また ちょうせん しよう！')+(window.__battleTestOnly===false?'<strong style="display:block;font-size:clamp(24px,4vw,42px);margin:16px 0;color:'+(win?'#f5cf65':'#ff9999')+'">⛏️ '+(win?'＋'+window.__battlePickReward:'−'+window.__battlePickLoss)+'ほん</strong>'+(win?'つるはしを ゲット！':'つるはしが へったよ'):'')+battleDropMessage(win),[['たんけんに もどる',()=>window.parent.postMessage({type:'mochiusa-battle-result-v1',win:win},'*')]])
 }
 
