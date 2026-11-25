@@ -19,9 +19,9 @@
  const originalFrame=frame;
  const directions=['down','right','up','left'];
  const catKey='mochiusa_character_unlock_kagineko_v1',chronoKey='mochiusa_character_unlock_jikuronosu_v1',images=new Map();
- function unlocked(){return localStorage.getItem(unlockKey)==='1'}
- function catUnlocked(){return localStorage.getItem(catKey)==='1'}
- function chronoUnlocked(){return localStorage.getItem(chronoKey)==='1'}
+ function unlocked(){return parent.__teacherMode===true||localStorage.getItem(unlockKey)==='1'}
+ function catUnlocked(){return parent.__teacherMode===true||localStorage.getItem(catKey)==='1'}
+ function chronoUnlocked(){return parent.__teacherMode===true||localStorage.getItem(chronoKey)==='1'}
  function selected(){if(tutorialActive)return 'mochiusa';const k=localStorage.getItem(choiceKey);return k==='tenseiryu'&&unlocked()?k:k==='kagineko'&&catUnlocked()?k:k==='jikuronosu'&&chronoUnlocked()?k:'mochiusa'}
  function preload(k){if(k==='mochiusa'||images.has(k))return;const list=[];for(const d of directions)for(let i=0;i<4;i++){const img=new Image();img.src='images/'+k+'_'+d+'_'+i+(k==='tenseiryu'?'.png':'.webp');list.push(img)}images.set(k,list)}
  function dragonFrame(i){const k=selected();sprite.src='images/'+k+'_'+directions[dir]+'_'+i+(k==='tenseiryu'?'.png':'.webp')}
