@@ -3,7 +3,7 @@ function battleDropMessage(win){if(!win||window.__battleTestOnly!==false||!Array
 const sprites={"0_0": "images/d53232930153cc8f.webp", "1_0": "images/f5dcbe15f535a4df.webp", "2_0": "images/bb3db842589154ec.webp", "3_0": "images/b55a6d9923b5e164.webp", "0_1": "images/730627ffc9482751.webp", "1_1": "images/09cf6c5b24dd376d.webp", "2_1": "images/3b0c448009ba91e7.webp", "3_1": "images/897f4e9810605dfa.webp", "0_2": "images/debc4eea12212ab4.webp", "1_2": "images/c0034a1b1a4ef1c9.webp", "2_2": "images/434981431e8e88d7.webp", "3_2": "images/55db315f32922f5a.webp"};
 const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms));
 $('mochi').src='images/a1c6b21fe72d524d.webp';
-const enemyMax=parent.parent.__teacherMode?2:25;let hp=25,ehp=enemyMax,turn='start',busy=false,ended=false,potion=0,dice456=0,armed456=false,brokenShield=0,shieldReady=false,round=0;
+const enemyMax=window.__tutorialBattle?4:parent.parent.__teacherMode?2:25;let hp=25,ehp=enemyMax,turn='start',busy=false,ended=false,potion=0,dice456=0,armed456=false,brokenShield=0,shieldReady=false,round=0;
 const positions={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 function showDie(n,id='die'){const el=$(id);const p=el.children;el.classList.toggle('one-face',n===1);for(let i=0;i<9;i++)p[i].style.visibility=positions[n]?.includes(i)?'visible':'hidden'}
 showDie(1);showDie(1,'die2');
