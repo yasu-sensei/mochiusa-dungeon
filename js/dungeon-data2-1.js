@@ -7,7 +7,7 @@ const enemyMax=window.__tutorialBattle?4:parent.parent.__teacherMode?2:25;let hp
 const positions={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 function showDie(n,id='die'){const el=$(id);const p=el.children;el.classList.toggle('one-face',n===1);for(let i=0;i<9;i++)p[i].style.visibility=positions[n]?.includes(i)?'visible':'hidden'}
 showDie(1);showDie(1,'die2');
-function ui(){ $('php').textContent=hp+' / 25';$('ehp').textContent=ehp+' / '+enemyMax;for(const [id,v] of [['pbar',hp],['ebar',ehp]]){$(id).style.width=v/(id==='ebar'?enemyMax:25)*100+'%';$(id).classList.toggle('low',v<=5)}$('roll').disabled=busy||ended||turn==='enemy';$('roll').textContent=turn==='start'?'🎯 ルーレットを まわす':'🎲 サイコロ';$('item').disabled=busy||ended||turn!=='hero';$('phase').textContent=ended?'けっちゃく！':turn==='start'?'せんこう こうこう':turn==='hero'?'モチウサの ばん':'モンスターの ばん'}
+let tutorialDiceUsed=false;function tutorialNeedsDice(){return window.__tutorialBattle&&!tutorialDiceUsed&&!armed456&&dice456>0}function tutorialGlow(el,on){if(!el)return;el.style.outline=on?'4px solid #fff18a':'';el.style.boxShadow=on?'0 0 20px #ffd54f':'';}function ui(){ $('php').textContent=hp+' / 25';$('ehp').textContent=ehp+' / '+enemyMax;for(const [id,v] of [['pbar',hp],['ebar',ehp]]){$(id).style.width=v/(id==='ebar'?enemyMax:25)*100+'%';$(id).classList.toggle('low',v<=5)}$('roll').disabled=busy||ended||turn==='enemy'||(turn==='hero'&&tutorialNeedsDice());$('roll').textContent=turn==='start'?'🎯 ルーレットを まわす':'🎲 サイコロ';$('item').disabled=busy||ended||turn!=='hero';$('phase').textContent=ended?'けっちゃく！':turn==='start'?'せんこう こうこう':turn==='hero'?'モチウサの ばん':'モンスターの ばん';if(window.__tutorialBattle){const need=turn==='hero'&&tutorialNeedsDice()&&!busy&&!ended;const ready=turn==='hero'&&armed456&&!busy&&!ended;tutorialGlow($('item'),need);tutorialGlow($('roll'),ready);if(need)message('さっき ひろった 456ダイスを つかってみよう！');if(ready)message('サイコロを ふってみよう！');}}
 function message(t){$('status').textContent=t}
 function modal(title,body,buttons){$('modal').innerHTML='<h2>'+title+'</h2><p>'+body+'</p>';for(const [label,fn,disabled] of buttons){const b=document.createElement('button');b.textContent=label;b.disabled=!!disabled;b.onclick=()=>{close();fn()};$('modal').append(b)}$('overlay').classList.add('show')}
 function close(){$('overlay').classList.remove('show')}
@@ -58,7 +58,7 @@ async function animateDice(isHero,targetHP){
  const d1=$('die'),d2=$('die2'),arena=document.querySelector('.arena');
  const boosted=isHero&&armed456;
  const results=isHero?(boosted?[4+Math.floor(Math.random()*3),4+Math.floor(Math.random()*3)]:[rand(6),rand(6)]):[monsterDie(),monsterDie()];
- if(boosted){armed456=false;dice456--;window.parent.postMessage({type:'chitei-item-used',item:'dice'},'*');updateItemIndicators();}
+ if(boosted){tutorialDiceUsed=true;armed456=false;dice456--;window.parent.postMessage({type:'chitei-item-used',item:'dice'},'*');updateItemIndicators();}
  const tense=targetHP<=12||hp<=8||ehp<=8;
  arena.classList.toggle('dice-tense',tense);
  for(const d of [d1,d2])d.classList.remove('dice-high','dice-finisher','dice-land','dice-first-glow','dice-zorome','fate-spin','fate-blank','fate-reveal');
@@ -114,7 +114,7 @@ async function spinRoulette(){
  await sleep(3450);
  return green;
 }
-async function rollClick(){if(busy||ended||turn==='enemy')return;busy=true;ui();if(turn==='start'){message('ルーレットで せんこうを きめよう！');const green=await spinRoulette();$('rollText').textContent=green?'🟢 みどり！':'🔴 あか！';turn=green?'hero':'enemy';message(green?'🟢 モチウサが せんこう！':'🔴 モンスターが せんこう！');await sleep(1050);showRoulette(false);busy=false;ui();if(turn==='enemy'){await sleep(600);enemyTurn()}return}
+async function rollClick(){if(busy||ended||turn==='enemy'||(turn==='hero'&&tutorialNeedsDice()))return;busy=true;ui();if(turn==='start'){message('ルーレットで せんこうを きめよう！');const green=await spinRoulette();$('rollText').textContent=green?'🟢 みどり！':'🔴 あか！';turn=green?'hero':'enemy';message(green?'🟢 モチウサが せんこう！':'🔴 モンスターが せんこう！');await sleep(1050);showRoulette(false);busy=false;ui();if(turn==='enemy'){await sleep(600);enemyTurn()}return}
 message('モチウサが サイコロを ふる！');const n=await animateDice(true,ehp);$('rollText').textContent=n+' ダメージ！';if(ehp<=n){await lethalAttack(true,n,n);return}jolt('heroBox','strike');await sleep(260);ehp=Math.max(0,ehp-n);jolt('enemyBox','enemyhurt');pop('left',n);message('モンスターに '+n+' ダメージ！');ui();await sleep(900);turn='enemy';busy=false;ui();await sleep(500);enemyTurn()}
 async function enemyTurn(){if(ended||turn!=='enemy'||busy)return;busy=true;ui();message('モンスターが サイコロを ふる！');await sleep(380);const n=await animateDice(false,hp);$('rollText').textContent=n+' ダメージ！';const blocked=shieldReady?2+Math.floor(Math.random()*4):0;shieldReady=false;const damage=Math.max(0,n-blocked);if(blocked){await itemFx('shatter','🛡️','−'+blocked,1200)}updateItemIndicators();if(hp<=damage){await lethalAttack(false,n,damage);return}jolt('enemyBox','enemystrike');await sleep(260);hp=Math.max(0,hp-damage);jolt('heroBox','herohurt');pop('right',damage);message('モチウサに '+damage+' ダメージ！');ui();await sleep(1000);turn='hero';busy=false;message('モチウサの ばん！ サイコロか アイテムを えらぼう');ui()}
 async function finalParticles(){
@@ -195,4 +195,4 @@ $('item').onclick=()=>{if(busy||turn!=='hero'||ended)return;
  ['🎲 456ダイス（つぎの2こが 4・5・6） のこり'+dice456+(armed456?'【セットずみ】':''),()=>activateItem('dice'),dice456===0||armed456],
  ['🛡️ ボロボロのたて（つぎのダメージを 2〜5 へらす） のこり'+brokenShield+(shieldReady?'【そうびずみ】':''),()=>activateItem('shield'),brokenShield===0||shieldReady],
  ['もどる',()=>{}]
- ])};ui();
+ ]);if(tutorialNeedsDice()){const buttons=$('modal').querySelectorAll('button');tutorialGlow(buttons[1],true);}};ui();
