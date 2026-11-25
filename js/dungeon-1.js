@@ -21,17 +21,22 @@ function create(floor=currentFloor){
     for(let j=0;j<count;j++)types[pool[at++]]=type;
   return {x:5,y:5,pick:15,open:[start],types,found:[],steps:0,wallet:{ticket:0,items:{heal:0,dice:0,shield:0}}};
 }
-let state=readFloor(currentFloor);if(!validFloor(state))state=create(currentFloor);
-if(currentFloor===1&&localStorage.getItem('mochiusa_tutorial_bonus_pending')==='1'){state.pick=15;localStorage.setItem(floorKey(1),JSON.stringify(state));localStorage.removeItem('mochiusa_tutorial_bonus_pending');}
+let state=tutorialActive&&currentFloor===1?create(1):readFloor(currentFloor);if(!validFloor(state))state=create(currentFloor);
+if(!tutorialActive&&currentFloor===1&&localStorage.getItem('mochiusa_tutorial_bonus_pending')==='1'){state.pick=15;localStorage.setItem(floorKey(1),JSON.stringify(state));localStorage.removeItem('mochiusa_tutorial_bonus_pending');}
 // つるはしとアイテムは階をまたいで引き継ぐ。
 const priorFloor=Array.from({length:17},(_,i)=>i+1).filter(f=>f!==currentFloor).map(readFloor).filter(validFloor).sort((a,b)=>(b._sharedAt||0)-(a._sharedAt||0))[0];
 if(!tutorialActive&&validFloor(priorFloor)&&priorFloor._sharedAt>(state._sharedAt||0)){state.pick=priorFloor.pick;state.wallet=priorFloor.wallet;}
 x=state.x;y=state.y;
 const icons={item:'',monster:'👾',wood:'‼️',emptywood:'‼️',mimic:'‼️',silver:'‼️',gold:'‼️',stairs:'🌀',special:'💎',empty:''};const cells=[];
-function save(){updateFloorLabel();if(tutorialActive&&currentFloor===1)return;state._sharedAt=Date.now();localStorage.setItem(floorKey(currentFloor),JSON.stringify(state));localStorage.setItem(FLOOR_ACTIVE_KEY,String(currentFloor));updateFloorLabel();}function updateFloorLabel(){const label=document.getElementById('floorLabel');if(label)label.textContent='地下'+currentFloor+'階';const back=document.getElementById('backFloor1');if(back)back.style.display=(currentFloor>1||tutorialActive&&currentFloor===1)?'block':'none';}
+function save(){updateFloorLabel();if(tutorialActive&&currentFloor===1)return;state._sharedAt=Date.now();localStorage.setItem(floorKey(currentFloor),JSON.stringify(state));if(!tutorialActive)localStorage.setItem(FLOOR_ACTIVE_KEY,String(currentFloor));updateFloorLabel();}function updateFloorLabel(){const label=document.getElementById('floorLabel');if(label)label.textContent='地下'+currentFloor+'階';const back=document.getElementById('backFloor1');if(back)back.style.display=(currentFloor>1||tutorialActive&&currentFloor===1)?'block':'none';}
+function finishCoreTutorial(){localStorage.setItem(tutorialDone,'1');localStorage.removeItem(tutorialPhaseKey);localStorage.setItem('mochiusa_medal_00','1');if(!localStorage.getItem(KEY)){localStorage.setItem(FLOOR_ACTIVE_KEY,'1');localStorage.setItem('mochiusa_tutorial_bonus_pending','1');}moving=true;const d=document.createElement('dialog');d.style.cssText='background:#142b49;color:#ffe5a0;border:2px solid #e4bd69;border-radius:16px;padding:24px;text-align:center;max-width:85vw';const h=document.createElement('h2');h.textContent='🎉 チュートリアル クリア！';const p=document.createElement('p');p.textContent='タイトルから ぼうけんを はじめよう！';const b=document.createElement('button');b.textContent='タイトルへ';b.style.cssText='background:#e4bd69;color:#30200d;border:0;border-radius:8px;padding:12px 24px;font-weight:bold';b.onclick=()=>parent.location.reload();d.addEventListener('cancel',e=>e.preventDefault());d.append(h,p,b);document.body.append(d);d.showModal();}
 function moveFloor(next){
  if(next<0||next>17||next===0&&!tutorialActive)return;
- if(tutorialActive){if(currentFloor===0&&next===1&&tutorialPhase===2){tutorialActive=false;localStorage.setItem(tutorialDone,'1');localStorage.removeItem(tutorialPhaseKey);localStorage.setItem('mochiusa_medal_00','1');if(parent.__coreTutorialReplay){parent.location.reload();return;}state.pick=15;state.wallet={ticket:0,items:{heal:0,dice:0,shield:0}};}else if(currentFloor===0&&next===1){tutorialPhase=1;localStorage.setItem(tutorialPhaseKey,'1');}else if(currentFloor===1&&next===0){tutorialPhase=2;localStorage.setItem(tutorialPhaseKey,'2');}}
+ if(tutorialActive){
+ if(currentFloor===1&&next===0){currentFloor=0;state=readFloor(0)||create(0);x=state.x;y=state.y;dir=0;activeTarget=-1;position(x,y);frame(0);render();finishCoreTutorial();return;}
+ if(currentFloor===0&&next===1&&tutorialPhase===2){finishCoreTutorial();return;}
+ if(currentFloor===0&&next===1){tutorialPhase=1;localStorage.setItem(tutorialPhaseKey,'1');}
+ }
  save();const sharedPick=state.pick,sharedWallet=state.wallet;
  currentFloor=next;
  let nextState=tutorialActive&&next===1?create(1):readFloor(next);
