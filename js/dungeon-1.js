@@ -21,6 +21,7 @@ function create(floor=currentFloor){
   return {x:5,y:5,pick:15,open:[start],types,found:[],steps:0,wallet:{ticket:0,items:{heal:0,dice:0,shield:0}}};
 }
 let state=readFloor(currentFloor);if(!validFloor(state))state=create(currentFloor);
+if(currentFloor===1&&localStorage.getItem('mochiusa_tutorial_bonus_pending')==='1'){state.pick=10;localStorage.setItem(floorKey(1),JSON.stringify(state));localStorage.removeItem('mochiusa_tutorial_bonus_pending');}
 // つるはしとアイテムは階をまたいで引き継ぐ。
 const priorFloor=Array.from({length:17},(_,i)=>i+1).filter(f=>f!==currentFloor).map(readFloor).filter(validFloor).sort((a,b)=>(b._sharedAt||0)-(a._sharedAt||0))[0];
 if(validFloor(priorFloor)&&priorFloor._sharedAt>(state._sharedAt||0)){state.pick=priorFloor.pick;state.wallet=priorFloor.wallet;}
