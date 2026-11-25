@@ -18,28 +18,29 @@
  const button=document.createElement('button');button.type='button';button.id='openCharacter';button.textContent='🐉 キャラ へんこう';button.hidden=true;book.insertAdjacentElement('afterend',button);
  const originalFrame=frame;
  const directions=['down','right','up','left'];
- const catKey='mochiusa_character_unlock_kagineko_v1',images=new Map();
+ const catKey='mochiusa_character_unlock_kagineko_v1',chronoKey='mochiusa_character_unlock_jikuronosu_v1',images=new Map();
  function unlocked(){return localStorage.getItem(unlockKey)==='1'}
  function catUnlocked(){return localStorage.getItem(catKey)==='1'}
- function selected(){if(tutorialActive)return 'mochiusa';const k=localStorage.getItem(choiceKey);return k==='tenseiryu'&&unlocked()?k:k==='kagineko'&&catUnlocked()?k:'mochiusa'}
- function preload(k){if(k==='mochiusa'||images.has(k))return;const list=[];for(const d of directions)for(let i=0;i<4;i++){const img=new Image();img.src='images/'+k+'_'+d+'_'+i+(k==='kagineko'?'.webp':'.png');list.push(img)}images.set(k,list)}
- function dragonFrame(i){const k=selected();sprite.src='images/'+k+'_'+directions[dir]+'_'+i+(k==='kagineko'?'.webp':'.png')}
+ function chronoUnlocked(){return localStorage.getItem(chronoKey)==='1'}
+ function selected(){if(tutorialActive)return 'mochiusa';const k=localStorage.getItem(choiceKey);return k==='tenseiryu'&&unlocked()?k:k==='kagineko'&&catUnlocked()?k:k==='jikuronosu'&&chronoUnlocked()?k:'mochiusa'}
+ function preload(k){if(k==='mochiusa'||images.has(k))return;const list=[];for(const d of directions)for(let i=0;i<4;i++){const img=new Image();img.src='images/'+k+'_'+d+'_'+i+(k==='tenseiryu'?'.png':'.webp');list.push(img)}images.set(k,list)}
+ function dragonFrame(i){const k=selected();sprite.src='images/'+k+'_'+directions[dir]+'_'+i+(k==='tenseiryu'?'.png':'.webp')}
  frame=function(row){const k=selected();if(k!=='mochiusa'){preload(k);dragonFrame(row===2?3:row===1?2:0)}else originalFrame(row)};
  const originalHop=hop;
  hop=async function(nx,ny){
   const k=selected();if(k==='mochiusa')return originalHop(nx,ny);
   const sx=x,sy=y,start=performance.now(),ms=440;
-  await new Promise(resolve=>{function tick(t){const p=Math.min(1,(t-start)/ms),lift=Math.sin(Math.PI*p)*(k==='kagineko'?12:32);position(sx+(nx-sx)*p,sy+(ny-sy)*p,lift);dragonFrame(k==='kagineko'?Math.min(3,Math.floor(p*4)):p<.18?1:p<.78?2:3);shadow.style.transform='scale('+(1-lift/95)+')';shadow.style.opacity=String(1-lift/65);if(p<1)requestAnimationFrame(tick);else resolve()}requestAnimationFrame(tick)});
+  await new Promise(resolve=>{function tick(t){const p=Math.min(1,(t-start)/ms),lift=Math.sin(Math.PI*p)*(k==='kagineko'?12:k==='jikuronosu'?6:32);position(sx+(nx-sx)*p,sy+(ny-sy)*p,lift);dragonFrame(k!=='tenseiryu'?Math.min(3,Math.floor(p*4)):p<.18?1:p<.78?2:3);shadow.style.transform='scale('+(1-lift/95)+')';shadow.style.opacity=String(1-lift/65);if(p<1)requestAnimationFrame(tick);else resolve()}requestAnimationFrame(tick)});
   x=nx;y=ny;state.x=x;state.y=y;state.steps++;position(x,y);frame(0);shadow.style.transform='';shadow.style.opacity='1';
  };
- function refresh(){if(!tutorialActive){if(currentFloor>=5||Array.from({length:13},(_,i)=>i+5).some(f=>validFloor(readFloor(f))))localStorage.setItem(unlockKey,'1');if(currentFloor>=3||Array.from({length:15},(_,i)=>i+3).some(f=>validFloor(readFloor(f))))localStorage.setItem(catKey,'1')}const visible=!tutorialActive&&(unlocked()||catUnlocked());button.hidden=!visible;button.style.display=visible?'':'none'}
+ function refresh(){if(!tutorialActive){if(currentFloor>=5||Array.from({length:13},(_,i)=>i+5).some(f=>validFloor(readFloor(f))))localStorage.setItem(unlockKey,'1');if(currentFloor>=3||Array.from({length:15},(_,i)=>i+3).some(f=>validFloor(readFloor(f))))localStorage.setItem(catKey,'1');if(currentFloor>=10||Array.from({length:8},(_,i)=>i+10).some(f=>validFloor(readFloor(f))))localStorage.setItem(chronoKey,'1')}const visible=!tutorialActive&&(unlocked()||catUnlocked()||chronoUnlocked());button.hidden=!visible;button.style.display=visible?'':'none'}
  const originalSave=save;save=function(){originalSave();refresh()};
  button.addEventListener('click',()=>{
-  if(moving||tutorialActive||(!unlocked()&&!catUnlocked()))return;
+  if(moving||tutorialActive||(!unlocked()&&!catUnlocked()&&!chronoUnlocked()))return;
   const modal=document.getElementById('dungeonModal'),body=document.getElementById('dungeonModalBody'),heading=document.getElementById('dungeonModalTitle');
   heading.textContent='キャラクターを えらぼう';body.replaceChildren();
   const grid=document.createElement('div');grid.style.cssText='display:flex;gap:12px;justify-content:center;flex-wrap:wrap';
-  for(const [key,name,src] of [['mochiusa','モチウサ',sprites['0_0']],['kagineko','カギネコ','images/kagineko_down_0.webp'],['tenseiryu','テンセイリュウ','images/tenseiryu_down_0.png']].filter(([k])=>k==='mochiusa'||(k==='kagineko'?catUnlocked():unlocked()))){
+  for(const [key,name,src] of [['mochiusa','モチウサ',sprites['0_0']],['kagineko','カギネコ','images/kagineko_down_0.webp'],['tenseiryu','テンセイリュウ','images/tenseiryu_down_0.png'],['jikuronosu','ジクロノス','images/jikuronosu_down_0.webp']].filter(([k])=>k==='mochiusa'||(k==='kagineko'?catUnlocked():k==='jikuronosu'?chronoUnlocked():unlocked()))){
    const b=document.createElement('button');b.type='button';b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px;min-width:120px';
    const img=document.createElement('img');img.src=src;img.alt='';img.style.cssText='width:100px;height:100px;object-fit:contain';b.append(img,document.createTextNode(name+(key===selected()?' ★':'')));
    b.onclick=()=>{localStorage.setItem(choiceKey,key);frame(0);modal.classList.remove('active')};grid.append(b);
