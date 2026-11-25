@@ -1,5 +1,5 @@
 (()=>{const btn=document.getElementById('titleStart'),title=document.getElementById('titleStage'),frame=document.getElementById('game');let started=false,page=0;const key='mochiusa_adventure_guide_v1';const pages=[
-['ちていの ぼうけんへ！','ちていには、ふしぎな おたからが いっぱい！<br>モチウサと いっしょに たんけんしよう！','<img src="images/d53232930153cc8f.webp" alt="モチウサ">'],
+['ちていの ぼうけんへ！','モチウサたちと いっしょに、<br>かくかいの とくべつな おたからを あつめながら、<br>ちか40かいを めざす ゲームだよ！','<img src="images/d53232930153cc8f.webp" alt="モチウサ">'],
 ['べんきょうが ぼうけんの ちからに！','かん字や カタカナの べんきょうを しよう。<br>たくさん せいかいすると、つるはしが たくさん もらえるよ！','📖　➡　⛏️'],
 ['いわの なかには なにが ある？','となりの いわを タップ！<br>つるはしを 1ぽん つかって ほろう。<br>たからばこや アイテムが でてくるよ！','<img src="images/13d2f986df447f08.webp" alt="いわ">　⛏️　🎁'],
 ['サイコロバトル！','モンスターが あらわれたら サイコロバトル！<br>かつと つるはしが 1〜3ぼん ふえるよ。<br>まけると 2ほん へるよ。','<span class="guideDice">🎲</span>　⚔️'],
