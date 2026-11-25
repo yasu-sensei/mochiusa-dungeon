@@ -29,11 +29,11 @@ if(!tutorialActive&&validFloor(priorFloor)&&priorFloor._sharedAt>(state._sharedA
 x=state.x;y=state.y;
 const icons={item:'',monster:'👾',wood:'‼️',emptywood:'‼️',mimic:'‼️',silver:'‼️',gold:'‼️',stairs:'🌀',special:'💎',empty:''};const cells=[];
 function save(){updateFloorLabel();if(tutorialActive&&currentFloor===1)return;state._sharedAt=Date.now();localStorage.setItem(floorKey(currentFloor),JSON.stringify(state));if(!tutorialActive)localStorage.setItem(FLOOR_ACTIVE_KEY,String(currentFloor));updateFloorLabel();}function updateFloorLabel(){const label=document.getElementById('floorLabel');if(label)label.textContent='地下'+currentFloor+'階';const back=document.getElementById('backFloor1');if(back)back.style.display=(currentFloor>1||tutorialActive&&currentFloor===1)?'block':'none';}
-function finishCoreTutorial(){localStorage.setItem(tutorialDone,'1');localStorage.removeItem(tutorialPhaseKey);localStorage.setItem('mochiusa_medal_00','1');if(!localStorage.getItem(KEY)){localStorage.setItem(FLOOR_ACTIVE_KEY,'1');localStorage.setItem('mochiusa_tutorial_bonus_pending','1');}moving=true;const d=document.createElement('dialog');d.style.cssText='background:#142b49;color:#ffe5a0;border:2px solid #e4bd69;border-radius:16px;padding:24px;text-align:center;max-width:85vw';const h=document.createElement('h2');h.textContent='🎉 チュートリアル クリア！';const p=document.createElement('p');p.textContent='タイトルから ぼうけんを はじめよう！';const b=document.createElement('button');b.textContent='タイトルへ';b.style.cssText='background:#e4bd69;color:#30200d;border:0;border-radius:8px;padding:12px 24px;font-weight:bold';b.onclick=()=>parent.location.reload();d.addEventListener('cancel',e=>e.preventDefault());d.append(h,p,b);document.body.append(d);d.showModal();}
+function finishCoreTutorial(){localStorage.setItem(tutorialDone,'1');localStorage.removeItem(tutorialPhaseKey);localStorage.setItem('mochiusa_medal_00','1');if(!localStorage.getItem(KEY)){localStorage.setItem(FLOOR_ACTIVE_KEY,'1');localStorage.setItem('mochiusa_tutorial_bonus_pending','1');}moving=true;alert('🎉 チュートリアル クリア！\nタイトルから ぼうけんを はじめよう！');parent.location.reload();}
 function moveFloor(next){
  if(next<0||next>17||next===0&&!tutorialActive)return;
  if(tutorialActive){
- if(currentFloor===1&&next===0){currentFloor=0;state=readFloor(0)||create(0);x=state.x;y=state.y;dir=0;activeTarget=-1;position(x,y);frame(0);render();finishCoreTutorial();return;}
+ if(currentFloor===1&&next===0){finishCoreTutorial();return;}
  if(currentFloor===0&&next===1&&tutorialPhase===2){finishCoreTutorial();return;}
  if(currentFloor===0&&next===1){tutorialPhase=1;localStorage.setItem(tutorialPhaseKey,'1');}
  }
